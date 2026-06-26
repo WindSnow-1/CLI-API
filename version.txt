@@ -1,4 +1,4 @@
-full_hash=05cf7fd105291140f7063c7c0009156a26a68bb8
-short_hash=05cf7fd
-message=Initial commit: GCLI2API with custom Apple-style frontend
-date=2026-06-27 02:41:49 +0800
+full_hash=85a5fbd75445c1e137e8a83a8c31cc1d769f541d
+short_hash=85a5fbd
+message=Fix SQLite compatibility: replace unixepoch() with strftime
+date=2026-06-27 03:59:48 +0800

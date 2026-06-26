@@ -42,8 +42,8 @@ class SQLiteManager:
             ("tier", "TEXT DEFAULT 'pro'"),
             ("rotation_order", "INTEGER DEFAULT 0"),
             ("call_count", "INTEGER DEFAULT 0"),
-            ("created_at", "REAL DEFAULT (unixepoch())"),
-            ("updated_at", "REAL DEFAULT (unixepoch())")
+            ("created_at", "REAL DEFAULT (strftime('%s','now'))"),
+            ("updated_at", "REAL DEFAULT (strftime('%s','now'))")
         ],
         "antigravity_credentials": [
             ("disabled", "INTEGER DEFAULT 0"),
@@ -56,8 +56,8 @@ class SQLiteManager:
             ("enable_credit", "INTEGER DEFAULT 0"),
             ("rotation_order", "INTEGER DEFAULT 0"),
             ("call_count", "INTEGER DEFAULT 0"),
-            ("created_at", "REAL DEFAULT (unixepoch())"),
-            ("updated_at", "REAL DEFAULT (unixepoch())")
+            ("created_at", "REAL DEFAULT (strftime('%s','now'))"),
+            ("updated_at", "REAL DEFAULT (strftime('%s','now'))")
         ]
     }
 
@@ -183,8 +183,8 @@ class SQLiteManager:
                 call_count INTEGER DEFAULT 0,
 
                 -- 时间戳
-                created_at REAL DEFAULT (unixepoch()),
-                updated_at REAL DEFAULT (unixepoch())
+                created_at REAL DEFAULT (strftime('%s','now')),
+                updated_at REAL DEFAULT (strftime('%s','now'))
             )
         """)
 
@@ -216,8 +216,8 @@ class SQLiteManager:
                 call_count INTEGER DEFAULT 0,
 
                 -- 时间戳
-                created_at REAL DEFAULT (unixepoch()),
-                updated_at REAL DEFAULT (unixepoch())
+                created_at REAL DEFAULT (strftime('%s','now')),
+                updated_at REAL DEFAULT (strftime('%s','now'))
             )
         """)
 
@@ -246,7 +246,7 @@ class SQLiteManager:
             CREATE TABLE IF NOT EXISTS config (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL,
-                updated_at REAL DEFAULT (unixepoch())
+                updated_at REAL DEFAULT (strftime('%s','now'))
             )
         """)
 
@@ -516,7 +516,7 @@ class SQLiteManager:
                     await db.execute(f"""
                         UPDATE {table_name}
                         SET credential_data = ?,
-                            updated_at = unixepoch()
+                            updated_at = strftime('%s','now')
                         WHERE filename = ?
                     """, (json.dumps(credential_data), filename))
                 else:
@@ -642,7 +642,7 @@ class SQLiteManager:
                 log.info(f"[DB] 没有需要更新的状态字段")
                 return True
 
-            set_clauses.append("updated_at = unixepoch()")
+            set_clauses.append("updated_at = strftime('%s','now')")
             values.append(filename)
 
             log.debug(f"[DB] SQL参数: set_clauses={set_clauses}, values={values}")
@@ -1125,7 +1125,7 @@ class SQLiteManager:
             async with aiosqlite.connect(self._db_path) as db:
                 await db.execute("""
                     INSERT INTO config (key, value, updated_at)
-                    VALUES (?, ?, unixepoch())
+                    VALUES (?, ?, strftime('%s','now'))
                     ON CONFLICT(key) DO UPDATE SET
                         value = excluded.value,
                         updated_at = excluded.updated_at
@@ -1275,7 +1275,7 @@ class SQLiteManager:
                     await db.execute(f"""
                         UPDATE {table_name}
                         SET model_cooldowns = ?,
-                            updated_at = unixepoch()
+                            updated_at = strftime('%s','now')
                         WHERE filename = ?
                     """, (json.dumps(model_cooldowns), filename))
                     await db.commit()
@@ -1303,7 +1303,7 @@ class SQLiteManager:
                 result = await db.execute(f"""
                     UPDATE {table_name}
                     SET model_cooldowns = '{{}}',
-                        updated_at = unixepoch()
+                        updated_at = strftime('%s','now')
                     WHERE filename = ?
                 """, (filename,))
                 updated_count = result.rowcount
@@ -1341,10 +1341,10 @@ class SQLiteManager:
                 # 条件写入：只有 error_codes 非空时才触发
                 await db.execute(f"""
                     UPDATE {table_name}
-                    SET last_success = unixepoch(),
+                    SET last_success = strftime('%s','now'),
                         error_codes   = '[]',
                         error_messages = '{{}}',
-                        updated_at    = unixepoch()
+                        updated_at    = strftime('%s','now')
                     WHERE filename = ?
                       AND (error_codes IS NOT NULL AND error_codes != '[]' AND error_codes != '')
                 """, (filename,))
@@ -1361,7 +1361,7 @@ class SQLiteManager:
                                 cooldowns.pop(model_name)
                                 await db.execute(f"""
                                     UPDATE {table_name}
-                                    SET model_cooldowns = ?, updated_at = unixepoch()
+                                    SET model_cooldowns = ?, updated_at = strftime('%s','now')
                                     WHERE filename = ?
                                 """, (json.dumps(cooldowns), filename))
 

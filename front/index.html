@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCLI2API</title>
+    <link rel="stylesheet" href="./front/style.css">
+</head>
+<body>
+
+<!-- ============================================================= -->
+<!-- Login Page                                                      -->
+<!-- ============================================================= -->
+<div id="loginSection" class="login-page">
+    <div class="login-card">
+        <h1>GCLI2API</h1>
+        <p>输入密码以访问控制面板</p>
+        <input type="password" id="loginPassword" placeholder="访问密码" onkeypress="handlePasswordEnter(event)">
+        <button class="btn btn-primary btn-block" onclick="login()">登录</button>
+    </div>
+</div>
+
+<!-- ============================================================= -->
+<!-- Main App Layout                                                 -->
+<!-- ============================================================= -->
+<div id="mainSection" class="hidden">
+
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <button class="mobile-menu-btn" onclick="toggleSidebar()">&#9776;</button>
+        <span style="font-weight:600;font-size:15px;">GCLI2API</span>
+        <button class="logout-btn" onclick="logout()">退出</button>
+    </div>
+
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">GCLI2API</div>
+                <div class="sidebar-version" id="versionText">加载中...</div>
+            </div>
+
+            <div class="sidebar-nav">
+                <button class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard', this)">
+                    <span class="nav-icon">&#9632;</span> 仪表盘
+                </button>
+                <div class="nav-separator"></div>
+                <button class="nav-item" data-page="oauth" onclick="switchPage('oauth', this)">
+                    <span class="nav-icon">&#128273;</span> OAuth 认证
+                </button>
+                <button class="nav-item" data-page="antigravity" onclick="switchPage('antigravity', this)">
+                    <span class="nav-icon">&#128640;</span> Antigravity 认证
+                </button>
+                <button class="nav-item" data-page="upload" onclick="switchPage('upload', this)">
+                    <span class="nav-icon">&#128228;</span> 批量上传
+                </button>
+                <div class="nav-separator"></div>
+                <button class="nav-item" data-page="manage" onclick="switchPage('manage', this)">
+                    <span class="nav-icon">&#128196;</span> GCLI 凭证管理
+                </button>
+                <button class="nav-item" data-page="antigravity-manage" onclick="switchPage('antigravity-manage', this)">
+                    <span class="nav-icon">&#128203;</span> Antigravity 凭证管理
+                </button>
+                <div class="nav-separator"></div>
+                <button class="nav-item" data-page="config" onclick="switchPage('config', this)">
+                    <span class="nav-icon">&#9881;</span> 配置管理
+                </button>
+                <button class="nav-item" data-page="logs" onclick="switchPage('logs', this)">
+                    <span class="nav-icon">&#128220;</span> 实时日志
+                </button>
+                <button class="nav-item" data-page="about" onclick="switchPage('about', this)">
+                    <span class="nav-icon">&#8505;</span> 项目信息
+                </button>
+            </div>
+
+            <div class="sidebar-footer">
+                <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
+                    <span id="themeIcon">&#9790;</span> <span id="themeLabel">暗色</span>
+                </button>
+                <button class="logout-btn" onclick="logout()">退出登录</button>
+            </div>
+        </nav>
+
+        <!-- Sidebar Overlay (mobile) -->
+        <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+        <!-- Content Area -->
+        <main class="content-area">
+
+            <!-- ======================================================= -->
+            <!-- Dashboard Page                                          -->
+            <!-- ======================================================= -->
+            <div id="dashboardPage" class="page-content active">
+                <div class="page-header">
+                    <h2>仪表盘</h2>
+                    <p>系统概览与凭证状态</p>
+                </div>
+
+                <!-- GCLI Stats -->
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">GCLI 凭证状态</div>
+                            <div class="card-subtitle">当前凭证池概览</div>
+                        </div>
+                        <button class="btn btn-sm btn-secondary" onclick="refreshDashboard()">刷新</button>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card accent">
+                            <div class="stat-value" id="dashGcliTotal">-</div>
+                            <div class="stat-label">总计</div>
+                        </div>
+                        <div class="stat-card green">
+                            <div class="stat-value" id="dashGcliNormal">-</div>
+                            <div class="stat-label">正常</div>
+                        </div>
+                        <div class="stat-card red">
+                            <div class="stat-value" id="dashGcliDisabled">-</div>
+                            <div class="stat-label">禁用</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Antigravity Stats -->
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Antigravity 凭证状态</div>
+                            <div class="card-subtitle">Antigravity 凭证池概览</div>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card accent">
+                            <div class="stat-value" id="dashAgTotal">-</div>
+                            <div class="stat-label">总计</div>
+                        </div>
+                        <div class="stat-card green">
+                            <div class="stat-value" id="dashAgNormal">-</div>
+                            <div class="stat-label">正常</div>
+                        </div>
+                        <div class="stat-card red">
+                            <div class="stat-value" id="dashAgDisabled">-</div>
+                            <div class="stat-label">禁用</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts area -->
+                <div class="dashboard-grid">
+                    <div class="chart-card">
+                        <h4>GCLI 错误分布</h4>
+                        <canvas id="gcliErrorChart" height="200"></canvas>
+                        <div id="gcliErrorChartFallback" class="text-center" style="padding:40px;color:var(--text-secondary);">加载数据中...</div>
+                    </div>
+                    <div class="chart-card">
+                        <h4>Antigravity 错误分布</h4>
+                        <canvas id="agErrorChart" height="200"></canvas>
+                        <div id="agErrorChartFallback" class="text-center" style="padding:40px;color:var(--text-secondary);">加载数据中...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================================================= -->
+            <!-- OAuth Page                                              -->
+            <!-- ======================================================= -->
+            <div id="oauthPage" class="page-content">
+                <div class="page-header">
+                    <h2>OAuth 认证</h2>
+                    <p>获取 Google Cloud OAuth 凭证</p>
+                </div>
+
+                <div class="info-box success">
+                    <strong>自动化优化：</strong>系统会在认证成功后自动启用 Gemini Cloud Assist API 和 Gemini for Google Cloud API。
+                </div>
+
+                <!-- Project ID (collapsible) -->
+                <div class="card">
+                    <div class="collapsible-header" onclick="toggleProjectIdSection()">
+                        <span>高级选项：Google Cloud Project ID（可选）</span>
+                        <span id="projectIdToggleIcon" style="transition:transform 0.3s;">&#9654;</span>
+                    </div>
+                    <div id="projectIdSection" class="collapsible-body">
+                        <div class="form-group">
+                            <label for="projectId">Google Cloud Project ID</label>
+                            <input type="text" id="projectId" class="form-input" placeholder="留空将自动检测">
+                            <span class="form-hint">不懂可以留空，系统会自动检测项目 ID</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary btn-block" id="getAuthBtn" onclick="startAuth()">获取认证链接</button>
+
+                <div id="authUrlSection" class="hidden" style="margin-top:16px;">
+                    <div class="card">
+                        <div class="card-title" style="margin-bottom:12px;">认证链接</div>
+                        <div class="auth-url">
+                            <a id="authUrl" href="#" target="_blank">点击此链接进行认证</a>
+                        </div>
+
+                        <div class="info-box info">
+                            <strong>操作步骤：</strong>
+                            <ol style="margin:8px 0;padding-left:20px;line-height:1.8;">
+                                <li>点击上方认证链接，完成 Google 账号授权</li>
+                                <li>授权后跳转到 localhost:11451 显示成功</li>
+                                <li>返回本页面，点击下方"获取认证文件"</li>
+                            </ol>
+                        </div>
+
+                        <!-- Callback URL shortcut -->
+                        <div style="margin-top:16px;">
+                            <div class="collapsible-header" onclick="toggleCallbackUrlSection()">
+                                <span>无法回源？使用快捷方式</span>
+                                <span id="callbackUrlToggleIcon" style="transition:transform 0.3s;">&#9660;</span>
+                            </div>
+                            <div id="callbackUrlSection" class="collapsible-body">
+                                <div class="info-box warning" style="margin-bottom:12px;">
+                                    <strong>适用场景：</strong>云服务器、VPS、Docker 等无法回源到 localhost 的环境。
+                                </div>
+                                <div class="form-group">
+                                    <label>回调 URL</label>
+                                    <input type="url" id="callbackUrlInput" class="form-input" placeholder="粘贴完整的回调 URL">
+                                </div>
+                                <button class="btn btn-primary" onclick="processCallbackUrl()">从回调 URL 获取凭证</button>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary btn-block mt-16" id="getCredsBtn" onclick="getCredentials()">获取认证文件</button>
+                    </div>
+                </div>
+
+                <div id="credentialsSection" class="hidden" style="margin-top:16px;">
+                    <div class="card">
+                        <div class="card-title" style="margin-bottom:12px;">认证文件内容</div>
+                        <div class="credentials" id="credentialsContent"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================================================= -->
+            <!-- Antigravity Auth Page                                   -->
+            <!-- ======================================================= -->
+            <div id="antigravityPage" class="page-content">
+                <div class="page-header">
+                    <h2>Antigravity 认证</h2>
+                    <p>获取 Google Antigravity 凭证</p>
+                </div>
+
+                <div class="info-box info">
+                    <strong>Antigravity 认证模式</strong> — 获取 Google Antigravity 凭证
+                </div>
+
+                <button class="btn btn-primary btn-block" id="getAntigravityAuthBtn" onclick="startAntigravityAuth()">获取 Antigravity 认证链接</button>
+
+                <div id="antigravityAuthUrlSection" class="hidden" style="margin-top:16px;">
+                    <div class="card">
+                        <div class="card-title" style="margin-bottom:12px;">Antigravity 认证链接</div>
+                        <div class="auth-url">
+                            <a id="antigravityAuthUrl" href="#" target="_blank">点击此链接进行认证</a>
+                        </div>
+
+                        <div class="info-box info">
+                            <strong>操作步骤：</strong>
+                            <ol style="margin:8px 0;padding-left:20px;line-height:1.8;">
+                                <li>点击认证链接，完成 Google 授权</li>
+                                <li>授权后跳转到 localhost 显示成功</li>
+                                <li>返回本页面，点击下方"获取凭证"</li>
+                            </ol>
+                        </div>
+
+                        <!-- Callback URL shortcut -->
+                        <div style="margin-top:16px;">
+                            <div class="collapsible-header" onclick="toggleAntigravityCallbackUrlSection()">
+                                <span>无法回源？使用快捷方式</span>
+                                <span id="antigravityCallbackUrlToggleIcon" style="transition:transform 0.3s;">&#9660;</span>
+                            </div>
+                            <div id="antigravityCallbackUrlSection" class="collapsible-body">
+                                <div class="form-group">
+                                    <label>回调 URL</label>
+                                    <input type="url" id="antigravityCallbackUrlInput" class="form-input" placeholder="粘贴完整的回调 URL">
+                                </div>
+                                <button class="btn btn-primary" onclick="processAntigravityCallbackUrl()">从回调 URL 获取凭证</button>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary btn-block mt-16" id="getAntigravityCredsBtn" onclick="getAntigravityCredentials()">获取 Antigravity 凭证</button>
+                    </div>
+                </div>
+
+                <div id="antigravityCredsSection" class="hidden" style="margin-top:16px;">
+                    <div class="card">
+                        <div class="card-title" style="margin-bottom:12px;">Antigravity 凭证内容</div>
+                        <div class="credentials"><pre id="antigravityCredsContent"></pre></div>
+                        <button class="btn btn-primary mt-16" onclick="downloadAntigravityCredentials()">下载凭证文件</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================================================= -->
+            <!-- Upload Page                                             -->
+            <!-- ======================================================= -->
+            <div id="uploadPage" class="page-content">
+                <div class="page-header">
+                    <h2>批量上传</h2>
+                    <p>批量上传 GCLI 和 Antigravity 认证文件</p>
+                </div>
+
+                <!-- GCLI Upload -->
+                <div class="card">
+                    <div class="card-title" style="margin-bottom:16px;">GCLI 凭证上传</div>
+                    <div class="upload-zone" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                        <div class="upload-icon">&#128229;</div>
+                        <div class="upload-text">点击选择或拖拽文件</div>
+                        <div class="upload-hint">支持 .json 和 .zip 格式</div>
+                    </div>
+                    <input type="file" id="fileInput" multiple accept=".json,.zip" style="display:none;" onchange="handleFileSelect(event)">
+
+                    <div id="fileListSection" class="hidden mt-16">
+                        <div id="fileList"></div>
+                        <div class="btn-group mt-16">
+                            <button class="btn btn-primary" onclick="uploadFiles()">上传文件</button>
+                            <button class="btn btn-secondary" onclick="clearFiles()">清空列表</button>
+                        </div>
+                    </div>
+
+                    <div id="uploadProgressSection" class="hidden mt-16">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width:0%"></div>
+                        </div>
+                        <div class="text-center" style="font-size:13px;color:var(--text-secondary);" id="progressText">0%</div>
+                    </div>
+                </div>
+
+                <!-- Antigravity Upload -->
+                <div class="card">
+                    <div class="card-title" style="margin-bottom:16px;">Antigravity 凭证上传</div>
+                    <div class="upload-zone" onclick="document.getElementById('antigravityFileInput').click()"
+                         ondragover="event.preventDefault(); this.classList.add('dragover');"
+                         ondragleave="this.classList.remove('dragover');"
+                         ondrop="handleAntigravityFileDrop(event); this.classList.remove('dragover');">
+                        <div class="upload-icon">&#128229;</div>
+                        <div class="upload-text">点击选择或拖拽文件</div>
+                        <div class="upload-hint">支持 .json 和 .zip 格式</div>
+                    </div>
+                    <input type="file" id="antigravityFileInput" multiple accept=".json,.zip" style="display:none;" onchange="handleAntigravityFileSelect(event)">
+
+                    <div id="antigravityFileListSection" class="hidden mt-16">
+                        <div id="antigravityFileList"></div>
+                        <div class="btn-group mt-16">
+                            <button class="btn btn-primary" onclick="uploadAntigravityFiles()">上传文件</button>
+                            <button class="btn btn-secondary" onclick="clearAntigravityFiles()">清空列表</button>
+                        </div>
+                    </div>
+
+                    <div id="antigravityUploadProgressSection" class="hidden mt-16">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="antigravityProgressFill" style="width:0%"></div>
+                        </div>
+                        <div class="text-center" style="font-size:13px;color:var(--text-secondary);" id="antigravityProgressText">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================================================= -->
+            <!-- GCLI Credential Management Page                         -->
+            <!-- ======================================================= -->
+            <div id="managePage" class="page-content">
+                <div class="page-header">
+                    <h2>GCLI 凭证管理</h2>
+                    <p>管理所有 GCLI 认证文件</p>
+                </div>
+
+                <!-- API Addresses -->
+                <div class="api-address-box">
+                    <strong style="font-size:13px;">API 地址（点击复制）</strong>
+                    <table style="margin-top:6px;">
+                        <tr><td>OpenAI 格式</td><td><code id="gcliOpenaiUrl" onclick="cpUrl(this)"></code></td></tr>
+                        <tr><td>Claude 格式</td><td><code id="gcliClaudeUrl" onclick="cpUrl(this)"></code></td></tr>
+                        <tr><td>Gemini 格式</td><td><code id="gcliGeminiUrl" onclick="cpUrl(this)"></code></td></tr>
+                    </table>
+                    <script>(function(){var o=window.location.origin;document.getElementById('gcliOpenaiUrl').textContent=o+'/v1';document.getElementById('gcliClaudeUrl').textContent=o+'/v1';document.getElementById('gcliGeminiUrl').textContent=o;})();</script>
+                </div>
+
+                <!-- Info -->
+                <div class="info-box info">
+                    <strong>检验功能：</strong>点击凭证的"检验"按钮可重新获取 Project ID 并查看 tier。检验成功可恢复 403 错误。<br>
+                    <strong>预览功能：</strong>点击"设置预览"可配置 Preview 通道，解决 preview 模型 404 问题。
+                </div>
+
+                <!-- Stats -->
+                <div class="stats-grid" id="statsContainer">
+                    <div class="stat-card accent">
+                        <div class="stat-value" id="statTotal">0</div>
+                        <div class="stat-label">总计</div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-value" id="statNormal">0</div>
+                        <div class="stat-label">正常</div>
+                    </div>
+                    <div class="stat-card red">
+                        <div class="stat-value" id="statDisabled">0</div>
+                        <div class="stat-label">禁用</div>
+                    </div>
+                </div>
+
+                <div class="btn-group mb-16">
+                    <button class="btn btn-primary btn-sm" onclick="refreshCredsStatus()">刷新状态</button>
+                    <button class="btn btn-secondary btn-sm" onclick="downloadAllCreds()">打包下载</button>
+                </div>
+
+                <!-- Batch Controls -->
+                <div class="batch-controls">
+                    <h4>批量操作</h4>
+                    <div class="batch-actions">
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="selectAllCheckbox" class="select-all-checkbox" onchange="toggleSelectAll()">
+                            <label for="selectAllCheckbox">全选</label>
+                        </div>
+                        <span class="selected-count" id="selectedCount">已选择 0 项</span>
+                        <button class="batch-btn" id="batchEnableBtn" onclick="batchAction('enable')" disabled>批量启用</button>
+                        <button class="batch-btn" id="batchDisableBtn" onclick="batchAction('disable')" disabled>批量禁用</button>
+                        <button class="batch-btn batch-delete" id="batchDeleteBtn" onclick="batchAction('delete')" disabled>批量删除</button>
+                        <button class="batch-btn" id="batchVerifyBtn" onclick="batchVerifyProjectIds()" disabled>批量检验</button>
+                        <button class="batch-btn" id="batchPreviewBtn" onclick="batchConfigurePreview()" disabled>批量设置预览</button>
+                        <button class="batch-btn" onclick="refreshAllEmails()">刷新邮箱</button>
+                        <button class="batch-btn" onclick="deduplicateByEmail()">一键去重</button>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="filter-bar">
+                    <label>状态：</label>
+                    <select id="statusFilter" class="form-select" onchange="applyStatusFilter()">
+                        <option value="all">全部</option>
+                        <option value="enabled">启用</option>
+                        <option value="disabled">禁用</option>
+                    </select>
+                    <label>错误码：</label>
+                    <select id="errorCodeFilter" class="form-select" onchange="applyStatusFilter()">
+                        <option value="all">全部</option>
+                        <option value="none">无错误</option>
+                        <option value="400">400</option>
+                        <option value="403">403</option>
+                        <option value="429">429</option>
+                        <option value="500">500</option>
+                    </select>
+                    <label>冷却：</label>
+                    <select id="cooldownFilter" class="form-select" onchange="applyStatusFilter()">
+                        <option value="all">全部</option>
+                        <option value="in_cooldown">CD中</option>
+                        <option value="no_cooldown">未CD</option>
+                    </select>
+                    <label>Preview：</label>
+                    <select id="previewFilter" class="form-select" onchange="applyStatusFilter()">
+                        <option value="all">全部</option>
+                        <option value="preview">支持</option>
+                        <option value="no_preview">不支持</option>
+                    </select>
+                    <label>Tier：</label>
+                    <select id="tierFilter" class="form-select" onchange="applyStatusFilter()">
+                        <option value="all">全部</option>
+                        <option value="free">Free</option>
+                        <option value="pro">Pro</option>
+                        <option value="ultra">Ultra</option>
+                    </select>
+                    <label>每页：</label>
+                    <select id="pageSizeSelect" class="form-select" onchange="changePageSize()">
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="200">200</option>
+                        <option value="500">500</option>
+                        <option value="1000">1000</option>
+                    </select>
+                </div>
+
+                <!-- Creds List -->
+                <div id="credsListSection">
+                    <div class="loading" id="credsLoading">正在加载凭证文件...</div>
+                    <div id="credsList"></div>
+                    <div class="pagination-container" id="paginationContainer" style="display:none;">
+                        <button class="pagination-btn" id="prevPageBtn" onclick="changePage(-1)">上一页</button>
+                        <div class="pagination-info" id="paginationInfo">第 1 页，共 1 页</div>
+                        <button class="pagination-btn" id="nextPageBtn" onclick="changePage(1)">下一页</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================================================= -->
+            <!-- Antigravity Credential Management Page                  -->
+            <!-- ======================================================= -->
+            <div id="antigravity-managePage" class="page-content">
+                <div class="page-header">
+                    <h2>Antigravity 凭证管理</h2>
+                    <p>管理所有 Antigravity 认证文件</p>
+                </div>
+
+                <!-- API Addresses -->
+                <div class="api-address-box">
+                    <strong style="font-size:13px;">API 地址（点击复制）</strong>
+                    <table style="margin-top:6px;">
+                        <tr><td>OpenAI 格式</td><td><code id="antOpenaiUrl" onclick="cpUrl(this)"></code></td></tr>
+                        <tr><td>Claude 格式</td><td><code id="antClaudeUrl" onclick="cpUrl(this)"></code></td></tr>
+                        <tr><td>Gemini 格式</td><td><code id="antGeminiUrl" onclick="cpUrl(this)"></code></td></tr>
+                    </table>
+                    <script>(function(){var o=window.location.origin;document.getElementById('antOpenaiUrl').textContent=o+'/antigravity/v1';document.getElementById('antClaudeUrl').textContent=o+'/antigravity/v1';document.getElementById('antGeminiUrl').textContent=o+'/antigravity';})();</script>
+                </div>
+
+                <div class="info-box info">
+                    <strong>检验功能：</strong>点击凭证的"检验"按钮可重新获取 Project ID 并查看 tier。检验成功可恢复 403 错误。
+                </div>
+
+                <!-- Stats -->
+                <div class="stats-grid" id="antigravityStatsContainer">
+                    <div class="stat-card accent">
+                        <div class="stat-value" id="antigravityStatTotal">0</div>
+                        <div class="stat-label">总计</div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-value" id="antigravityStatNormal">0</div>
+                        <div class="stat-label">正常</div>
+                    </div>
+                    <div class="stat-card red">
+                        <div class="stat-value" id="antigravityStatDisabled">0</div>
+                        <div class="stat-label">禁用</div>
+                    </div>
+                </div>
+
+                <div class="btn-group mb-16">
+                    <button class="btn btn-primary btn-sm" onclick="refreshAntigravityCredsList()">刷新状态</button>
+                    <button class="btn btn-secondary btn-sm" onclick="downloadAllAntigravityCreds()">打包下载</button>
+                </div>
+
+                <!-- Batch Controls -->
+                <div class="batch-controls">
+                    <h4>批量操作</h4>
+                    <div class="batch-actions">
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="antigravitySelectAllCheckbox" class="select-all-checkbox" onchange="toggleSelectAllAntigravity()">
+                            <label for="antigravitySelectAllCheckbox">全选</label>
+                        </div>
+                        <span class="selected-count" id="antigravitySelectedCount">已选择 0 项</span>
+                        <button class="batch-btn" id="antigravityBatchEnableBtn" onclick="batchAntigravityAction('enable')" disabled>批量启用</button>
+                        <button class="batch-btn" id="antigravityBatchDisableBtn" onclick="batchAntigravityAction('disable')" disabled>批量禁用</button>
+                        <button class="batch-btn batch-delete" id="antigravityBatchDeleteBtn" onclick="batchAntigravityAction('delete')" disabled>批量删除</button>
+                        <button class="batch-btn" id="antigravityBatchEnableCreditBtn" onclick="batchAntigravityAction('enable_credit')" disabled>批量开启积分</button>
+                        <button class="batch-btn" id="antigravityBatchDisableCreditBtn" onclick="batchAntigravityAction('disable_credit')" disabled>批量关闭积分</button>
+                        <button class="batch-btn" id="antigravityBatchVerifyBtn" onclick="batchVerifyAntigravityProjectIds()" disabled>批量检验</button>
+                        <button class="batch-btn" onclick="refreshAllAntigravityEmails()">刷新邮箱</button>
+                        <button class="batch-btn" onclick="deduplicateAntigravityByEmail()">一键去重</button>
+                        <button class="batch-btn" onclick="refreshAllQuotas()">刷新所有额度</button>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="filter-bar">
+                    <label>状态：</label>
+                    <select id="antigravityStatusFilter" class="form-select" onchange="applyAntigravityStatusFilter()">
+                        <option value="all">全部</option>
+                        <option value="enabled">启用</option>
+                        <option value="disabled">禁用</option>
+                    </select>
+                    <label>错误码：</label>
+                    <select id="antigravityErrorCodeFilter" class="form-select" onchange="applyAntigravityStatusFilter()">
+                        <option value="all">全部</option>
+                        <option value="none">无错误</option>
+                        <option value="400">400</option>
+                        <option value="403">403</option>
+                        <option value="429">429</option>
+                        <option value="500">500</option>
+                    </select>
+                    <label>冷却：</label>
+                    <select id="antigravityCooldownFilter" class="form-select" onchange="applyAntigravityStatusFilter()">
+                        <option value="all">全部</option>
+                        <option value="in_cooldown">CD中</option>
+                        <option value="no_cooldown">未CD</option>
+                    </select>
+                    <label>Tier：</label>
+                    <select id="antigravityTierFilter" class="form-select" onchange="applyAntigravityStatusFilter()">
+                        <option value="all">全部</option>
+                        <option value="free">Free</option>
+                        <option value="pro">Pro</option>
+                        <option value="ultra">Ultra</option>
+                    </select>
+                    <label>每页：</label>
+                    <select id="antigravityPageSizeSelect" class="form-select" onchange="changeAntigravityPageSize()">
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="200">200</option>
+                        <option value="500">500</option>
+                        <option value="1000">1000</option>
+                    </select>
+                </div>
+
+                <!-- Creds List -->
+                <div id="antigravityCredsListSection">
+                    <div class="loading" id="antigravityCredsLoading">正在加载凭证文件...</div>
+                    <div id="antigravityCredsList"></div>
+                    <div class="pagination-container" id="antigravityPaginationContainer" style="display:none;">
+                        <button class="pagination-btn" id="antigravityPrevPageBtn" onclick="changeAntigravityPage(-1)">上一页</button>
+                        <div class="pagination-info" id="antigravityPaginationInfo">第 1 页，共 1 页</div>
+                        <button class="pagination-btn" id="antigravityNextPageBtn" onclick="changeAntigravityPage(1)">下一页</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================================================= -->
+            <!-- Config Page                                             -->
+            <!-- ======================================================= -->
+            <div id="configPage" class="page-content">
+                <div class="page-header">
+                    <h2>配置管理</h2>
+                    <p>修改后立即生效</p>
+                </div>
+
+                <div class="btn-group mb-16">
+                    <button class="btn btn-secondary btn-sm" onclick="loadConfig()">刷新配置</button>
+                    <button class="btn btn-primary btn-sm" onclick="saveConfig()">保存配置</button>
+                </div>
+
+                <div id="configSection">
+                    <div class="loading" id="configLoading">正在加载配置...</div>
+                    <div id="configForm" class="hidden">
+
+                        <!-- Server Config -->
+                        <div class="config-section">
+                            <h4>服务器配置</h4>
+                            <div class="form-group">
+                                <label for="host">服务器主机地址</label>
+                                <input type="text" id="host" class="form-input" placeholder="0.0.0.0">
+                                <span class="config-note">0.0.0.0 表示监听所有接口</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="port">服务器端口</label>
+                                <input type="number" id="port" class="form-input" min="1" max="65535" placeholder="7861">
+                                <span class="config-note">修改后需重启服务器</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="configApiPassword">API 访问密码</label>
+                                <input type="text" id="configApiPassword" class="form-input" placeholder="pwd">
+                            </div>
+                            <div class="form-group">
+                                <label for="configPanelPassword">控制面板密码</label>
+                                <input type="text" id="configPanelPassword" class="form-input" placeholder="pwd">
+                            </div>
+                            <div class="form-group">
+                                <label for="configPassword">通用密码</label>
+                                <input type="text" id="configPassword" class="form-input" placeholder="pwd">
+                                <span class="config-note">设置后覆盖上述两个密码，留空则分别设置</span>
+                            </div>
+                        </div>
+
+                        <!-- Basic Config -->
+                        <div class="config-section">
+                            <h4>基础配置</h4>
+                            <div class="form-group">
+                                <label for="credentialsDir">凭证目录路径</label>
+                                <input type="text" id="credentialsDir" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label for="proxy">代理设置</label>
+                                <input type="text" id="proxy" class="form-input" placeholder="http://proxy:11451 或 socks5://proxy:1080">
+                                <span class="config-note">留空不使用代理</span>
+                            </div>
+                        </div>
+
+                        <!-- Endpoint Config -->
+                        <div class="config-section">
+                            <h4>端点配置</h4>
+                            <div class="btn-group mb-16">
+                                <button class="btn btn-sm btn-secondary" onclick="useMirrorUrls()">使用镜像</button>
+                                <button class="btn btn-sm btn-secondary" onclick="restoreOfficialUrls()">还原官方</button>
+                            </div>
+                            <div class="form-group">
+                                <label for="codeAssistEndpoint">Code Assist Endpoint</label>
+                                <input type="text" id="codeAssistEndpoint" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label for="oauthProxyUrl">OAuth Endpoint</label>
+                                <input type="text" id="oauthProxyUrl" class="form-input" placeholder="https://oauth2.googleapis.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="googleapisProxyUrl">Google APIs Endpoint</label>
+                                <input type="text" id="googleapisProxyUrl" class="form-input" placeholder="https://www.googleapis.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="resourceManagerApiUrl">Resource Manager Endpoint</label>
+                                <input type="text" id="resourceManagerApiUrl" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label for="serviceUsageApiUrl">Service Usage Endpoint</label>
+                                <input type="text" id="serviceUsageApiUrl" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label for="antigravityApiUrl">Antigravity Endpoint</label>
+                                <input type="text" id="antigravityApiUrl" class="form-input">
+                            </div>
+                        </div>
+
+                        <!-- Auto Ban -->
+                        <div class="config-section">
+                            <h4>自动封禁</h4>
+                            <div class="form-group">
+                                <label class="form-checkbox">
+                                    <input type="checkbox" id="autoBanEnabled"> 启用自动封禁
+                                </label>
+                                <span class="config-note">遇到指定错误码时自动禁用凭证</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="autoBanErrorCodes">封禁错误码</label>
+                                <input type="text" id="autoBanErrorCodes" class="form-input" placeholder="400,403">
+                            </div>
+                        </div>
+
+                        <!-- Retry -->
+                        <div class="config-section">
+                            <h4>重试配置</h4>
+                            <div class="form-group">
+                                <label class="form-checkbox">
+                                    <input type="checkbox" id="retry429Enabled"> 启用错误重试
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label for="retry429MaxRetries">重试次数</label>
+                                <input type="number" id="retry429MaxRetries" class="form-input" min="1" max="50">
+                            </div>
+                            <div class="form-group">
+                                <label for="retry429Interval">重试间隔（秒）</label>
+                                <input type="number" id="retry429Interval" class="form-input" min="0.01" max="10" step="0.01">
+                            </div>
+                        </div>
+
+                        <!-- Compatibility -->
+                        <div class="config-section">
+                            <h4>兼容性配置</h4>
+                            <div class="form-group">
+                                <label class="form-checkbox">
+                                    <input type="checkbox" id="compatibilityModeEnabled"> 启用兼容性模式
+                                </label>
+                                <span class="config-note">所有 system 消息转为 user，停用 system_instructions</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-checkbox">
+                                    <input type="checkbox" id="returnThoughtsToFrontend"> 返回思维链
+                                </label>
+                                <span class="config-note">启用后返回模型思考过程</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-checkbox">
+                                    <input type="checkbox" id="antigravityStream2nostream"> Antigravity 流式转非流式
+                                </label>
+                                <span class="config-note">非流式请求使用流式 API 收集完整响应</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-checkbox">
+                                    <input type="checkbox" id="antigravitySwitchCredentialEnabled"> Antigravity 切换凭证
+                                </label>
+                                <span class="config-note">重试时切换凭证</span>
+                            </div>
+                        </div>
+
+                        <!-- Anti Truncation -->
+                        <div class="config-section">
+                            <h4>抗截断配置</h4>
+                            <div class="form-group">
+                                <label for="antiTruncationMaxAttempts">最大重试次数</label>
+                                <input type="number" id="antiTruncationMaxAttempts" class="form-input" min="1" max="10">
+                                <span class="config-note">选择带"-流式抗截断"后缀的模型启用</span>
+                            </div>
+                        </div>
+
+                        <!-- Keepalive -->
+                        <div class="config-section">
+                            <h4>保活配置</h4>
+                            <div class="form-group">
+                                <label for="keepaliveUrl">保活 URL</label>
+                                <input type="text" id="keepaliveUrl" class="form-input" placeholder="留空不启用">
+                                <button class="btn btn-sm btn-secondary mt-16" onclick="autoSetKeepaliveUrl()">一键设置</button>
+                            </div>
+                            <div class="form-group">
+                                <label for="keepaliveInterval">保活间隔（秒）</label>
+                                <input type="number" id="keepaliveInterval" class="form-input" min="5" max="86400">
+                            </div>
+                        </div>
+
+                        <!-- Hot Reload Info -->
+                        <div class="config-section">
+                            <h4>热更新说明</h4>
+                            <div class="info-box success">
+                                <strong>立即生效：</strong>代理设置、端点、密码、重试、自动封禁、抗截断
+                            </div>
+                            <div class="info-box warning">
+                                <strong>需要重启：</strong>主机地址、端口号、凭证目录
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================================================= -->
+            <!-- Logs Page                                               -->
+            <!-- ======================================================= -->
+            <div id="logsPage" class="page-content">
+                <div class="page-header">
+                    <h2>实时日志</h2>
+                    <p>系统实时日志输出</p>
+                </div>
+
+                <div class="btn-group mb-16">
+                    <button class="btn btn-primary btn-sm" onclick="connectWebSocket()">连接日志</button>
+                    <button class="btn btn-secondary btn-sm" onclick="disconnectWebSocket()">断开连接</button>
+                    <button class="btn btn-secondary btn-sm" onclick="downloadLogs()">下载日志</button>
+                    <button class="btn btn-danger btn-sm" onclick="clearLogs()">清空日志</button>
+                </div>
+
+                <div class="filter-bar">
+                    <label>日志级别：</label>
+                    <select id="logLevelFilter" class="form-select" onchange="filterLogs()">
+                        <option value="all">全部</option>
+                        <option value="ERROR">错误</option>
+                        <option value="WARNING">警告</option>
+                        <option value="INFO">信息</option>
+                        <option value="DEBUG">调试</option>
+                    </select>
+                    <label class="form-checkbox">
+                        <input type="checkbox" id="autoScroll" checked> 自动滚动
+                    </label>
+                </div>
+
+                <div id="logConnectionStatus" class="log-status disconnected">
+                    <span id="connectionStatusText">未连接</span>
+                </div>
+
+                <div class="log-container" id="logContainer">
+                    <div id="logContent">等待连接日志流...</div>
+                </div>
+            </div>
+
+            <!-- ======================================================= -->
+            <!-- About Page                                              -->
+            <!-- ======================================================= -->
+            <div id="aboutPage" class="page-content">
+                <div class="page-header">
+                    <h2>项目信息</h2>
+                </div>
+
+                <div class="about-card">
+                    <h4>版本信息</h4>
+                    <div id="versionInfo">
+                        <p>当前版本：<span id="versionDisplay">加载中...</span></p>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<!-- Toast container -->
+<div id="statusSection"></div>
+
+<!-- Scripts -->
+<script src="./front/common.js"></script>
+<script src="./front/app.js"></script>
+
+</body>
+</html>
